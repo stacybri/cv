@@ -22,7 +22,7 @@ library(tidyverse)
 PDF_EXPORT <- FALSE
 
 # Holds all the links that were inserted for placement at the end
-links <- c()
+links <- c('')
 
 source('parsing_functions.R')
 
@@ -63,11 +63,11 @@ Contact {#contact}
 --------------------------------------------------------------------------------
 
 
-- <i class="fa fa-envelope"></i> nick.strayer@gmail.com
-- <i class="fa fa-twitter"></i> NicholasStrayer
-- <i class="fa fa-github"></i> github.com/nstrayer
-- <i class="fa fa-link"></i> [nickstrayer.me](http://nickstrayer.me/)
-- <i class="fa fa-phone"></i> (734) 645-0110
+- <i class="fa fa-envelope"></i> stacybw@gmail.com
+- <i class="fa fa-twitter"></i> brianstacyecon
+- <i class="fa fa-github"></i> github.com/stacybri
+- <i class="fa fa-link"></i> [website](https://sites.google.com/site/brianstacyecon/)
+
 
 
 
@@ -79,24 +79,22 @@ Highly experienced in
 
 
 - R 
-- Python
-- Javascript
+- Stata
 
 Experience with
 
 
-- Bash
+- Python
 - SQL
-- C++
-- AWK
+- SAS
 
 
 Disclaimer {#disclaimer}
 --------------------------------------------------------------------------------
 
-Made with the R package [**pagedown**](https://github.com/rstudio/pagedown). 
+Made w/ [**pagedown**](https://github.com/rstudio/pagedown). 
 
-The source code is available at [github.com/nstrayer/cv](https://github.com/nstrayer/cv).
+The source code is available at [github.com/stacybri/cv](https://github.com/stacybri/cv).
 
 Last updated on `r Sys.Date()`.
 
@@ -105,14 +103,12 @@ Last updated on `r Sys.Date()`.
 Main
 ================================================================================
 
-Nick Strayer {#title}
+Brian Stacy {#title}
 --------------------------------------------------------------------------------
 
 
 ```{r}
-intro_text <- "I have made [visualizations viewed by hundreds of thousands of people](https://www.nytimes.com/interactive/2016/08/26/us/college-student-migration.html), [sped up query times for 25 terabytes of data by an average of 4,800 times](https://livefreeordichotomize.com/2019/06/04/using_awk_and_r_to_parse_25tb/), and built [packages for R](https://github.com/nstrayer/shinysense) that let you [do magic](http://nickstrayer.me/dataDayTexas/).
-
-Currently searching for a data science position that allows me to build tools using visualization and machine learning to help people explore and understand their data. 
+intro_text <- "Seasoned economic researcher with experience leading teams to undertake rigorous research on issues relating to education, labor markets, welfare programs, and development.
 "
 
 cat(sanitize_links(intro_text))
@@ -137,21 +133,6 @@ print_section(position_data, 'research_positions')
 ```
 
 
-
-Industry Experience {data-icon=suitcase}
---------------------------------------------------------------------------------
-
-::: aside
-I have worked in a variety of roles ranging from journalist to software engineer to data scientist. I like collaborative environments where I can learn from my peers. 
-:::
-
-```{r}
-print_section(position_data, 'industry_positions')
-```
-
-<br>
-<br>
-<br>
 
 Teaching Experience {data-icon=chalkboard-teacher}
 --------------------------------------------------------------------------------
