@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 )
 library(tidyverse)
 library(glue)
+library(scholar)
 
 # Set this to true to have links turned into footnotes at the end of the document
 PDF_EXPORT <- FALSE
@@ -148,4 +149,24 @@ Selected Writing {data-icon=newspaper}
 position_data %>% print_section('academic_articles')
 ```
 
+
+Citations {data-icon=newspaper}
+--------------------------------------------------------------------------------
+```{r echo=FALSE, fig.width=8,fig.height=4}
+id<-"MACGlOYAAAAJ"
+
+cites<-get_citation_history(id)
+
+p<-ggplot(cites, aes(x=year, y=cites)) +
+  geom_bar(stat='identity', fill="steelblue") +
+  geom_text(aes(label=cites), vjust=1.2, color="white", size=5) +
+  theme_minimal() +
+  scale_y_continuous(name="Citations") +
+  theme(axis.title = element_text(size=14),
+        title = element_text(size=16),
+        axis.text = element_text(size=12)) +
+  ggtitle("Citations For All Articles",)
+
+p
+```
 
