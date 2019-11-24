@@ -116,7 +116,7 @@ Brian Stacy {#title}
 --------------------------------------------------------------------------------
 
 ```{r}
-intro_text <- "Seasoned economic researcher with experience leading teams to undertake rigorous research on issues relating to education, labor markets, welfare programs, and development.
+intro_text <- "Economics researcher with experience leading teams to undertake rigorous research on issues relating to education, labor markets, poverty, and development.
 "
 
 
