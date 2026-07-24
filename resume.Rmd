@@ -1,5 +1,5 @@
 ---
-title: Brian Stacy's Resume"
+title: "Brian Stacy's Resume"
 author: Brian Stacy
 date: "`r Sys.Date()`"
 output:
@@ -18,7 +18,6 @@ knitr::opts_chunk$set(
 )
 library(tidyverse)
 library(glue)
-library(scholar)
 
 # Set this to true to have links turned into footnotes at the end of the document
 PDF_EXPORT <- FALSE
@@ -30,17 +29,38 @@ source('parsing_functions.R')
 
 
 # First let's get the data, filtering to only the items tagged as
-# Resume items
-position_data <- read_csv('positions.csv') %>% 
-  filter(in_resume) %>% 
+# Resume items. data/positions.csv is hand-maintained (education, positions,
+# teaching); data/publications_auto.csv is regenerated from ORCID + OpenAlex
+# by scripts/fetch_publications.R, so new papers show up without hand-editing.
+# start/end are forced to character (not guessed per-file) because
+# data/positions.csv can contain "current", which would otherwise make the
+# two files' column types disagree and break bind_rows().
+position_cols <- cols(
+  section = col_character(),
+  in_resume = col_logical(),
+  title = col_character(),
+  loc = col_character(),
+  institution = col_character(),
+  start = col_character(),
+  end = col_character(),
+  description_1 = col_character(),
+  description_2 = col_character(),
+  description_3 = col_character()
+)
+
+position_data <- bind_rows(
+    read_csv('data/positions.csv', col_types = position_cols),
+    read_csv('data/publications_auto.csv', col_types = position_cols)
+  ) %>%
+  filter(in_resume) %>%
   mutate(
     # Build some custom sections by collapsing others
     section = case_when(
-      section %in% c('research_positions', 'industry_positions') ~ 'positions', 
+      section %in% c('research_positions', 'industry_positions') ~ 'positions',
       section %in% c('data_science_writings', 'by_me_press') ~ 'writings',
       TRUE ~ section
     )
-  ) 
+  )
 
 ```
 
@@ -84,10 +104,7 @@ Experience with
 Open Source Contributions {#open-source}
 --------------------------------------------------------------------------------
 
-All projects available at `github.com/stacybri/<name>` or `https://github.com/worldbank/`
-
-
-- `GEPD`: R & Stata code to replicate Global Education Policy Dashboard work
+All projects available at `github.com/stacybri`
 
 
 
@@ -149,24 +166,4 @@ Selected Writing {data-icon=newspaper}
 position_data %>% print_section('academic_articles')
 ```
 
-
-Citations {data-icon=newspaper}
---------------------------------------------------------------------------------
-```{r echo=FALSE, fig.width=8,fig.height=4}
-id<-"MACGlOYAAAAJ"
-
-cites<-get_citation_history(id)
-
-p<-ggplot(cites, aes(x=year, y=cites)) +
-  geom_bar(stat='identity', fill="steelblue") +
-  geom_text(aes(label=cites), vjust=1.2, color="white", size=5) +
-  theme_minimal() +
-  scale_y_continuous(name="Citations") +
-  theme(axis.title = element_text(size=14),
-        title = element_text(size=16),
-        axis.text = element_text(size=12)) +
-  ggtitle("Citations For All Articles",)
-
-p
-```
 
