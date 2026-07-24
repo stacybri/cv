@@ -77,6 +77,8 @@ fetch_all_openalex_works <- function(works_api_url) {
 
 openalex_works <- fetch_all_openalex_works(works_api_url)
 
+known_institutions <- c("world bank", "usda", "economic research service", "michigan state")
+
 openalex_df <- map_dfr(openalex_works, function(w) {
   doi <- normalize_doi(w$doi)
   authorships <- w$authorships
@@ -85,7 +87,8 @@ openalex_df <- map_dfr(openalex_works, function(w) {
   } else {
     character(0)
   }
-  coauthors <- author_names[!str_detect(author_names, fixed("Stacy"))]
+  is_stacy <- str_detect(author_names, fixed("Stacy"))
+  coauthors <- author_names[!is_stacy]
   # A few OpenAlex works list the same co-author twice under different name
   # order/variants (e.g. "Patrick Canning" and "Canning, Patrick") that
   # weren't merged to one author id - dedupe by a word-set comparison.
@@ -93,6 +96,16 @@ openalex_df <- map_dfr(openalex_works, function(w) {
   coauthors <- coauthors[!duplicated(name_key)]
   venue <- w$primary_location$source$display_name %||% NA_character_
   link <- w$doi %||% w$primary_location$landing_page_url %||% NA_character_
+  # Institutions listed against Brian's own authorship entry (used below as a
+  # fallback signal for works not yet registered on ORCID).
+  stacy_institutions <- if (any(is_stacy)) {
+    authorships[is_stacy] %>%
+      map(~ .x$institutions) %>%
+      unlist(recursive = FALSE) %>%
+      map_chr(~ .x$display_name %||% NA_character_)
+  } else {
+    character(0)
+  }
   tibble(
     title = w$title %||% NA_character_,
     doi = doi,
@@ -102,6 +115,8 @@ openalex_df <- map_dfr(openalex_works, function(w) {
     cited_by_count = w$cited_by_count %||% 0,
     link = link,
     type = w$type %||% NA_character_,
+    known_institution_match = length(stacy_institutions) > 0 &&
+      any(map_lgl(known_institutions, ~ any(str_detect(str_to_lower(stacy_institutions), fixed(.x))))),
     counts_by_year = list(w$counts_by_year)
   )
 })
@@ -110,12 +125,14 @@ openalex_df <- map_dfr(openalex_works, function(w) {
 # drop them before matching so they never show up as CV entries.
 openalex_df <- openalex_df %>% filter(!type %in% c("dataset", "supplementary-materials"))
 
-# --- 3. Restrict OpenAlex results to works Brian has self-registered on ORCID,
-# matched by DOI, falling back to a normalized substring title match when
-# either side lacks a DOI. Most of Brian's ORCID entries have no DOI, and
-# titles differ in case/punctuation/truncation between the two sources
-# (e.g. ORCID has a truncated "Enrollment without Learning" alongside the
-# full title), so exact string equality drops most real matches. ---
+# --- 3. Restrict OpenAlex results to works that are plausibly Brian's own:
+# matched against his self-registered ORCID list (by DOI, falling back to a
+# normalized substring title match - see below), OR his own authorship entry
+# on the paper lists one of his known institutions. The ORCID-only version of
+# this filter dropped legitimate recent papers that hadn't been added to his
+# ORCID record yet (e.g. a 2025 World Development article, still ORCID-less,
+# whose 2023 working-paper precursor *was* on ORCID) - the institution check
+# catches those without opening the door to a different "Brian Stacy". ---
 norm_title <- function(x) {
   x %>% str_to_lower() %>% str_replace_all("[^a-z0-9 ]", " ") %>% str_squish()
 }
@@ -134,24 +151,50 @@ openalex_df <- openalex_df %>%
   )
 
 matched <- openalex_df %>%
-  filter((!is.na(doi) & doi %in% orcid_dois) | title_matches) %>%
+  filter((!is.na(doi) & doi %in% orcid_dois) | title_matches | known_institution_match) %>%
   distinct(title, .keep_all = TRUE)
 
 # Working papers often get re-listed once the peer-reviewed version comes
 # out (same paper, multiple OpenAlex records - a "Working Paper #NN" suffix,
 # a preprint, and the final journal article, sometimes all typed "article").
-# Collapse those to a single entry, keeping the most recent year (the final
-# published version) rather than the highest citation count: OpenAlex splits
-# citation counts across the duplicate records, so an SSRN preprint can show
-# more citations than the journal version it was superseded by.
+# A "Working Paper #NN" suffix strip only catches title changes of that exact
+# shape; some papers get retitled more loosely between the preprint and final
+# version (e.g. "A Comparison of Growth Percentile..." became "...Student
+# Growth Percentile..."). Cluster by word-set (Jaccard) similarity instead, so
+# any two titles sharing most of their words collapse to one entry, keeping
+# the most recent year (the final published version) - not the highest
+# citation count, since OpenAlex splits citations across duplicate records
+# and an SSRN preprint can show more than the journal version it was
+# superseded by.
 strip_wp_suffix <- function(t) str_remove(t, "\\s*working paper\\s*#?\\s*\\d*\\.?\\s*$")
+word_set <- function(t) unique(str_split(t, "\\s+")[[1]])
+jaccard_sim <- function(a, b) {
+  sa <- word_set(a); sb <- word_set(b)
+  length(intersect(sa, sb)) / length(union(sa, sb))
+}
+
+matched <- matched %>% mutate(dedup_key = strip_wp_suffix(norm_title))
+
+keys <- unique(matched$dedup_key)
+cluster_id <- setNames(seq_along(keys), keys)
+if (length(keys) > 1) {
+  for (i in seq_len(length(keys) - 1)) {
+    for (j in seq((i + 1), length(keys))) {
+      if (jaccard_sim(keys[i], keys[j]) > 0.75) {
+        old_id <- cluster_id[[keys[j]]]
+        new_id <- cluster_id[[keys[i]]]
+        cluster_id[cluster_id == old_id] <- new_id
+      }
+    }
+  }
+}
 
 matched <- matched %>%
-  mutate(dedup_key = strip_wp_suffix(norm_title)) %>%
-  group_by(dedup_key) %>%
+  mutate(cluster_id = cluster_id[dedup_key]) %>%
+  group_by(cluster_id) %>%
   slice_max(year, n = 1, with_ties = FALSE) %>%
   ungroup() %>%
-  select(-dedup_key)
+  select(-cluster_id, -dedup_key)
 
 # --- 4. Shape into data/positions.csv schema and write out ------------------
 publications_auto <- matched %>%
