@@ -79,7 +79,7 @@ Contact {#contact}
 - <i class="fa fa-envelope"></i> stacybw@gmail.com
 - <i class="fa fa-twitter"></i> brianstacyecon
 - <i class="fa fa-github"></i> github.com/stacybri
-- <i class="fa fa-link"></i> [website](https://sites.google.com/site/brianstacyecon/)
+- <i class="fa fa-link"></i> [website](https://stacybri.github.io/)
 
 
 
@@ -111,7 +111,7 @@ All projects available at `github.com/stacybri`
 More info {#more-info}
 --------------------------------------------------------------------------------
 
-See [website](https://sites.google.com/site/brianstacyecon/) for more information.
+See [website](https://stacybri.github.io/) for more information.
 
 
 Disclaimer {#disclaimer}
@@ -165,5 +165,4 @@ Selected Writing {data-icon=newspaper}
 ```{r}
 position_data %>% print_section('academic_articles')
 ```
-
 
