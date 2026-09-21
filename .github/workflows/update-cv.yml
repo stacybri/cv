@@ -44,8 +44,10 @@ jobs:
             any::rmarkdown
             any::pagedown
 
-      - uses: browser-actions/setup-chrome@v1
+      - uses: browser-actions/setup-chrome@v2
         id: setup-chrome
+        with:
+          chrome-version: stable
 
       - name: Fetch publications from ORCID + OpenAlex
         run: Rscript scripts/fetch_publications.R
